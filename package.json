@@ -1,0 +1,55 @@
+{
+  "name": "om-map-utils",
+  "version": "1.0.0",
+  "description": "JS 地图坐标转换工具库，支持 WGS-84、GCJ-02、BD-09 三种坐标系之间的相互转换",
+  "type": "module",
+  "main": "dist/om-map-utils.cjs",
+  "module": "dist/om-map-utils.esm.js",
+  "browser": "dist/om-map-utils.js",
+  "types": "dist/index.d.ts",
+  "unpkg": "dist/om-map-utils.min.js",
+  "jsdelivr": "dist/om-map-utils.min.js",
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "postbuild": "cp dist/om-map-utils.js docs/ && cp dist/om-map-utils.min.js docs/",
+    "dev": "rollup -c -w",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "map",
+    "coordinate",
+    "conversion",
+    "wgs84",
+    "gcj02",
+    "bd09",
+    "baidu",
+    "amap",
+    "gaode",
+    "gps",
+    "地图",
+    "坐标转换",
+    "火星坐标",
+    "百度坐标"
+  ],
+  "author": "orange4moon",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/orange4moon/om-map-utils.git"
+  },
+  "bugs": {
+    "url": "https://github.com/orange4moon/om-map-utils/issues"
+  },
+  "homepage": "https://github.com/orange4moon/om-map-utils#readme",
+  "devDependencies": {
+    "@rollup/plugin-terser": "^0.4.4",
+    "rollup": "^4.9.0"
+  }
+}
+

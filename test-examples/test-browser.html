@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>浏览器 UMD 格式测试</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .test-box {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    h1 {
+      color: #333;
+    }
+    pre {
+      background: #f8f8f8;
+      padding: 15px;
+      border-radius: 5px;
+      overflow-x: auto;
+    }
+    .success {
+      color: #52c41a;
+      font-weight: bold;
+    }
+    .error {
+      color: #f5222d;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>🗺️ om-map-utils - 浏览器 UMD 格式测试</h1>
+  
+  <div class="test-box">
+    <h2>测试结果</h2>
+    <div id="result"></div>
+  </div>
+
+  <!-- 引入构建后的 UMD 格式文件 -->
+  <script src="../dist/om-map-utils.js"></script>
+  
+  <script>
+    const resultDiv = document.getElementById('result')
+    
+    function log(message, isSuccess = true) {
+      const p = document.createElement('p')
+      p.innerHTML = message
+      if (isSuccess === false) {
+        p.className = 'error'
+      }
+      resultDiv.appendChild(p)
+    }
+
+    try {
+      // 检查全局对象
+      if (typeof MapUtils === 'undefined') {
+        throw new Error('MapUtils 未定义！')
+      }
+      
+      log('✓ MapUtils 全局对象加载成功')
+      
+      // 测试坐标转换
+      const wgs84 = { lng: 116.397428, lat: 39.90923 }
+      log(`<br><strong>原始坐标 (WGS-84):</strong> ${wgs84.lng}, ${wgs84.lat}`)
+      
+      // WGS-84 -> GCJ-02
+      const gcj02 = MapUtils.wgs84ToGcj02(wgs84.lng, wgs84.lat)
+      log(`<strong>转换为 GCJ-02:</strong> ${gcj02.lng.toFixed(6)}, ${gcj02.lat.toFixed(6)}`)
+      
+      // GCJ-02 -> BD-09
+      const bd09 = MapUtils.gcj02ToBd09(gcj02.lng, gcj02.lat)
+      log(`<strong>转换为 BD-09:</strong> ${bd09.lng.toFixed(6)}, ${bd09.lat.toFixed(6)}`)
+      
+      // BD-09 -> WGS-84
+      const wgs84Result = MapUtils.bd09ToWgs84(bd09.lng, bd09.lat)
+      log(`<strong>转换回 WGS-84:</strong> ${wgs84Result.lng.toFixed(6)}, ${wgs84Result.lat.toFixed(6)}`)
+      
+      // 验证精度
+      const lngDiff = Math.abs(wgs84Result.lng - wgs84.lng)
+      const latDiff = Math.abs(wgs84Result.lat - wgs84.lat)
+      
+      log(`<br><strong>精度验证:</strong>`)
+      log(`经度误差: ${lngDiff.toFixed(8)}`)
+      log(`纬度误差: ${latDiff.toFixed(8)}`)
+      
+      if (lngDiff < 0.00001 && latDiff < 0.00001) {
+        log('<br><span class="success">✓ 所有测试通过！坐标转换精度符合要求。</span>')
+      } else {
+        log('<br><span class="error">✗ 测试失败：精度不符合要求</span>', false)
+      }
+      
+      // 测试批量转换
+      const points = [
+        { lng: 116.397428, lat: 39.90923 },
+        { lng: 117.288077, lat: 39.137075 }
+      ]
+      const convertedPoints = MapUtils.batchConvert(points, MapUtils.wgs84ToGcj02)
+      log(`<br><strong>批量转换测试:</strong> 成功转换 ${convertedPoints.length} 个坐标点`)
+      
+    } catch (error) {
+      log(`<span class="error">✗ 测试失败: ${error.message}</span>`, false)
+      console.error(error)
+    }
+  </script>
+</body>
+</html>
+

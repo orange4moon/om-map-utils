@@ -1,0 +1,22 @@
+# 源代码和构建配置（npm 包中不需要）
+src/
+rollup.config.js
+.gitignore
+
+# 示例和文档
+demo/
+
+# 开发相关
+node_modules/
+.DS_Store
+.vscode/
+.idea/
+
+# 测试
+coverage/
+.nyc_output/
+*.log
+
+# 其他
+.env
+

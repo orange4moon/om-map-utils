@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="地图坐标转换工具，支持 WGS-84、GCJ-02、BD-09 三种坐标系之间的相互转换。轻量级、高精度、零依赖。" />
+    <meta name="keywords" content="坐标转换,地图,WGS84,GCJ02,BD09,GPS,高德地图,百度地图,OpenStreetMap" />
+    <meta name="author" content="orange4moon" />
+    <title>om-map-utils - 地图坐标转换工具 | 支持 WGS-84、GCJ-02、BD-09</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        background: #f9fafb;
+        min-height: 100vh;
+        padding: 20px;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      .header {
+        text-align: center;
+        color: #1f2937;
+        margin-bottom: 40px;
+        padding: 20px 0;
+      }
+      .header h1 {
+        font-size: 32px;
+        font-weight: 700;
+        margin-bottom: 8px;
+        color: #111827;
+      }
+      .header p {
+        font-size: 14px;
+        color: #6b7280;
+        margin-top: 8px;
+      }
+      .converter-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 20px;
+        margin-bottom: 20px;
+      }
+      .converter-card {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        transition: box-shadow 0.2s;
+      }
+      .converter-card:hover {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      }
+      .card-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      .card-icon {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 12px;
+        flex-shrink: 0;
+      }
+      .wgs84 .card-icon {
+        background: #1f2937;
+      }
+      .gcj02 .card-icon {
+        background: #4b5563;
+      }
+      .bd09 .card-icon {
+        background: #6b7280;
+      }
+      .card-title {
+        flex: 1;
+      }
+      .card-title h2 {
+        font-size: 18px;
+        font-weight: 600;
+        color: #111827;
+        margin-bottom: 4px;
+      }
+      .card-title p {
+        font-size: 12px;
+        color: #6b7280;
+      }
+      .input-group {
+        margin-bottom: 16px;
+      }
+      .input-group label {
+        display: block;
+        font-size: 13px;
+        color: #374151;
+        margin-bottom: 6px;
+        font-weight: 500;
+      }
+      .input-group input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #111827;
+        transition: border-color 0.2s, box-shadow 0.2s;
+      }
+      .input-group input:focus {
+        outline: none;
+        border-color: #1f2937;
+        box-shadow: 0 0 0 3px rgba(31, 41, 55, 0.1);
+      }
+      .btn-convert {
+        width: 100%;
+        padding: 10px 16px;
+        background: #1f2937;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.2s;
+        margin-top: 8px;
+      }
+      .btn-convert:hover {
+        background: #111827;
+      }
+      .btn-convert:active {
+        background: #0f1419;
+      }
+      .input-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .input-wrapper input {
+        flex: 1;
+      }
+      .input-copy-btn {
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        background: #1f2937;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .input-copy-btn:hover {
+        background: #111827;
+      }
+      .input-copy-btn:active {
+        background: #0f1419;
+      }
+      .quick-samples {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+      }
+      .quick-samples h3 {
+        color: #111827;
+        margin-bottom: 16px;
+        font-size: 16px;
+        font-weight: 600;
+      }
+      .sample-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+      }
+      .sample-btn {
+        padding: 12px;
+        background: #f9fafb;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: left;
+      }
+      .sample-btn:hover {
+        background: #1f2937;
+        border-color: #1f2937;
+        color: white;
+      }
+      .sample-btn .name {
+        font-weight: 600;
+        font-size: 13px;
+        margin-bottom: 4px;
+      }
+      .sample-btn .coords {
+        font-size: 11px;
+        opacity: 0.7;
+        font-family: 'Courier New', monospace;
+      }
+      .toast {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #1f2937;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 6px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        opacity: 0;
+        transform: translateY(-20px);
+        transition: all 0.2s;
+        z-index: 1000;
+        font-size: 14px;
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      .map-container {
+        width: 100%;
+        height: 300px;
+        position: relative;
+        border-radius: 6px;
+        overflow: hidden;
+        border: 1px solid #e5e7eb;
+      }
+      .map-info {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 11px;
+        z-index: 1000;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        max-width: 280px;
+        border: 1px solid #e5e7eb;
+      }
+      .map-info .label {
+        color: #6b7280;
+        margin-bottom: 2px;
+        font-size: 10px;
+      }
+      .map-info .value {
+        color: #111827;
+        font-family: 'Courier New', monospace;
+        font-weight: 600;
+        font-size: 11px;
+      }
+      .footer {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        margin-top: 20px;
+        text-align: center;
+      }
+      .footer-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+      }
+      .footer-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #111827;
+        margin-bottom: 4px;
+      }
+      .footer-links {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+      }
+      .footer-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        background: #1f2937;
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        transition: background 0.2s;
+      }
+      .footer-link:hover {
+        background: #111827;
+      }
+      .footer-author {
+        color: #6b7280;
+        font-size: 13px;
+      }
+      .footer-author a {
+        color: #1f2937;
+        text-decoration: none;
+        font-weight: 600;
+      }
+      .footer-author a:hover {
+        text-decoration: underline;
+      }
+      .footer-npm {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        background: #f9fafb;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+        color: #111827;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>om-map-utils</h1>
+        <p>地图坐标转换工具 | 支持 WGS-84、GCJ-02、BD-09 三种坐标系的相互转换</p>
+      </div>
+
+      <div class="converter-grid">
+        <!-- WGS-84 转换器 -->
+        <div class="converter-card wgs84">
+          <div class="card-header">
+            <div class="card-icon"></div>
+            <div class="card-title">
+              <h2>WGS-84</h2>
+              <p>GPS 坐标系 / OpenStreetMap</p>
+            </div>
+          </div>
+          <!-- Leaflet 地图 -->
+          <div style="position: relative; margin-bottom: 15px">
+            <div class="map-container" id="leaflet-map"></div>
+            <div class="map-info" id="leaflet-info" style="display: none">
+              <div class="label">WGS-84 坐标：</div>
+              <div class="value" id="leaflet-coord"></div>
+            </div>
+          </div>
+          <div class="input-group">
+            <label>经度 (Longitude)</label>
+            <div class="input-wrapper">
+              <input type="number" id="wgs84-lng" step="0.000001" placeholder="例如: 116.397428" />
+              <button class="input-copy-btn" onclick="copyCoordinate('wgs84-lng', 'wgs84-lat')" title="复制坐标"
+                >📋</button
+              >
+            </div>
+          </div>
+          <div class="input-group">
+            <label>纬度 (Latitude)</label>
+            <div class="input-wrapper">
+              <input type="number" id="wgs84-lat" step="0.000001" placeholder="例如: 39.90923" />
+              <button class="input-copy-btn" onclick="copyCoordinate('wgs84-lng', 'wgs84-lat')" title="复制坐标"
+                >📋</button
+              >
+            </div>
+          </div>
+          <button class="btn-convert" onclick="convertFromWgs84()">转换到其他坐标系</button>
+        </div>
+
+        <!-- GCJ-02 转换器 -->
+        <div class="converter-card gcj02">
+          <div class="card-header">
+            <div class="card-icon"></div>
+            <div class="card-title">
+              <h2>GCJ-02</h2>
+              <p>高德/腾讯地图坐标系</p>
+            </div>
+          </div>
+          <!-- 高德地图 -->
+          <div style="position: relative; margin-bottom: 15px">
+            <div class="map-container" id="amap-container"></div>
+            <div class="map-info" id="amap-info" style="display: none">
+              <div class="label">GCJ-02 坐标：</div>
+              <div class="value" id="amap-coord"></div>
+            </div>
+          </div>
+          <div class="input-group">
+            <label>经度 (Longitude)</label>
+            <div class="input-wrapper">
+              <input type="number" id="gcj02-lng" step="0.000001" placeholder="例如: 116.403848" />
+              <button class="input-copy-btn" onclick="copyCoordinate('gcj02-lng', 'gcj02-lat')" title="复制坐标"
+                >📋</button
+              >
+            </div>
+          </div>
+          <div class="input-group">
+            <label>纬度 (Latitude)</label>
+            <div class="input-wrapper">
+              <input type="number" id="gcj02-lat" step="0.000001" placeholder="例如: 39.915714" />
+              <button class="input-copy-btn" onclick="copyCoordinate('gcj02-lng', 'gcj02-lat')" title="复制坐标"
+                >📋</button
+              >
+            </div>
+          </div>
+          <button class="btn-convert" onclick="convertFromGcj02()">转换到其他坐标系</button>
+        </div>
+
+        <!-- BD-09 转换器 -->
+        <div class="converter-card bd09">
+          <div class="card-header">
+            <div class="card-icon"></div>
+            <div class="card-title">
+              <h2>BD-09</h2>
+              <p>百度地图坐标系</p>
+            </div>
+          </div>
+          <!-- 百度地图 -->
+          <div style="position: relative; margin-bottom: 15px">
+            <div class="map-container" id="baidu-map"></div>
+            <div class="map-info" id="baidu-info" style="display: none">
+              <div class="label">BD-09 坐标：</div>
+              <div class="value" id="baidu-coord"></div>
+            </div>
+          </div>
+          <div class="input-group">
+            <label>经度 (Longitude)</label>
+            <div class="input-wrapper">
+              <input type="number" id="bd09-lng" step="0.000001" placeholder="例如: 116.410244" />
+              <button class="input-copy-btn" onclick="copyCoordinate('bd09-lng', 'bd09-lat')" title="复制坐标"
+                >📋</button
+              >
+            </div>
+          </div>
+          <div class="input-group">
+            <label>纬度 (Latitude)</label>
+            <div class="input-wrapper">
+              <input type="number" id="bd09-lat" step="0.000001" placeholder="例如: 39.922657" />
+              <button class="input-copy-btn" onclick="copyCoordinate('bd09-lng', 'bd09-lat')" title="复制坐标"
+                >📋</button
+              >
+            </div>
+          </div>
+          <button class="btn-convert" onclick="convertFromBd09()">转换到其他坐标系</button>
+        </div>
+      </div>
+
+      <!-- 快速示例 -->
+      <div class="quick-samples">
+        <h3>快速示例</h3>
+        <div class="sample-grid">
+          <div class="sample-btn" onclick="fillSample(116.39154375393856, 39.901102048450, 'wgs84')">
+            <div class="name">毛主席纪念堂</div>
+            <div class="coords">116.391544, 39.901102</div>
+          </div>
+          <div class="sample-btn" onclick="fillSample(117.288077, 39.137075, 'wgs84')">
+            <div class="name">天津卷烟厂</div>
+            <div class="coords">117.288077, 39.137075</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 页脚信息 -->
+      <div class="footer">
+        <div class="footer-content">
+          <div class="footer-author">
+            Made with ❤️ by 
+            <a href="https://github.com/orange4moon" target="_blank">orange4moon</a>
+            | MIT License
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script
+      type="text/javascript"
+      src="https://api.map.baidu.com/api?v=3.0&ak=kJ45f7tTG09FetBkvgMB4C5vw65thbY9"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://webapi.amap.com/maps?v=2.0&key=cccedb012d4741c1123bffbedd1b30ce"
+    ></script>
+    <script src="./om-map-utils.js"></script>
+    <script>
+      // 地图实例
+      let leafletMap = null
+      let amapInstance = null
+      let baiduMap = null
+
+      // 地图标记
+      let leafletMarker = null
+      let amapMarker = null
+      let baiduMarker = null
+
+      // 地图初始化状态
+      let mapsInitialized = false
+
+      // 初始化地图（页面加载后）
+      window.onload = function () {
+        // 等待所有地图 API 加载完成后再初始化
+        setTimeout(initMaps, 500)
+      }
+
+      // 初始化三个地图
+      function initMaps() {
+        try {
+          // 1. 初始化 Leaflet + OpenStreetMap（WGS-84）
+          if (typeof L !== 'undefined') {
+            leafletMap = L.map('leaflet-map').setView([39.9042, 116.4074], 13)
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              attribution: '© OpenStreetMap contributors',
+              maxZoom: 19
+            }).addTo(leafletMap)
+            console.log('✅ Leaflet 地图初始化成功')
+          } else {
+            console.error('❌ Leaflet 库未加载')
+          }
+
+          // 2. 初始化高德地图（GCJ-02）
+          if (typeof AMap !== 'undefined') {
+            amapInstance = new AMap.Map('amap-container', {
+              center: [116.4074, 39.9042],
+              zoom: 13,
+              mapStyle: 'amap://styles/normal'
+            })
+            console.log('✅ 高德地图初始化成功')
+          } else {
+            console.error('❌ 高德地图 API 未加载')
+          }
+
+          // 3. 初始化百度地图（BD-09）
+          if (typeof BMap !== 'undefined') {
+            baiduMap = new BMap.Map('baidu-map')
+            baiduMap.centerAndZoom(new BMap.Point(116.4074, 39.9042), 13)
+            baiduMap.enableScrollWheelZoom(true)
+            console.log('✅ 百度地图初始化成功')
+          } else {
+            console.error('❌ 百度地图 API 未加载')
+          }
+
+          mapsInitialized = true
+        } catch (error) {
+          console.error('地图初始化错误:', error)
+        }
+      }
+
+      // 在 Leaflet 地图上添加标记（WGS-84）
+      function addLeafletMarker(lng, lat) {
+        if (!leafletMap) {
+          console.warn('Leaflet 地图未初始化')
+          return
+        }
+
+        // 移除旧标记
+        if (leafletMarker) {
+          leafletMap.removeLayer(leafletMarker)
+        }
+
+        // 添加新标记
+        leafletMarker = L.marker([lat, lng], {
+          icon: L.icon({
+            iconUrl:
+              'data:image/svg+xml;base64,' +
+              btoa(
+                '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="42" viewBox="0 0 32 42"><path fill="#667eea" d="M16,0 C7.163,0 0,7.163 0,16 C0,24 16,42 16,42 C16,42 32,24 32,16 C32,7.163 24.837,0 16,0 Z"/><circle fill="white" cx="16" cy="16" r="7"/></svg>'
+              ),
+            iconSize: [32, 42],
+            iconAnchor: [16, 42],
+            popupAnchor: [0, -42]
+          })
+        }).addTo(leafletMap)
+
+        // 移动地图中心
+        leafletMap.setView([lat, lng], 13)
+
+        // 显示坐标信息
+        const coordElem = document.getElementById('leaflet-coord')
+        const infoElem = document.getElementById('leaflet-info')
+        if (coordElem && infoElem) {
+          coordElem.textContent = formatCoord(lng, lat)
+          infoElem.style.display = 'block'
+        }
+      }
+
+      // 在高德地图上添加标记（GCJ-02）
+      function addAmapMarker(lng, lat) {
+        if (!amapInstance) {
+          console.warn('高德地图未初始化')
+          return
+        }
+
+        // 移除旧标记
+        if (amapMarker) {
+          amapInstance.remove(amapMarker)
+        }
+
+        // 添加新标记
+        amapMarker = new AMap.Marker({
+          position: [lng, lat],
+          icon: new AMap.Icon({
+            size: new AMap.Size(32, 42),
+            image:
+              'data:image/svg+xml;charset=utf-8,' +
+              encodeURIComponent(
+                '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="42" viewBox="0 0 32 42"><path fill="#f5576c" d="M16,0 C7.163,0 0,7.163 0,16 C0,24 16,42 16,42 C16,42 32,24 32,16 C32,7.163 24.837,0 16,0 Z"/><circle fill="white" cx="16" cy="16" r="7"/></svg>'
+              ),
+            imageSize: new AMap.Size(32, 42)
+          }),
+          offset: new AMap.Pixel(-16, -42)
+        })
+        amapInstance.add(amapMarker)
+
+        // 移动地图中心
+        amapInstance.setCenter([lng, lat])
+
+        // 显示坐标信息
+        const coordElem = document.getElementById('amap-coord')
+        const infoElem = document.getElementById('amap-info')
+        if (coordElem && infoElem) {
+          coordElem.textContent = formatCoord(lng, lat)
+          infoElem.style.display = 'block'
+        }
+      }
+
+      // 在百度地图上添加标记（BD-09）
+      function addBaiduMarker(lng, lat) {
+        if (!baiduMap) {
+          console.warn('百度地图未初始化')
+          return
+        }
+
+        // 移除旧标记
+        if (baiduMarker) {
+          baiduMap.removeOverlay(baiduMarker)
+        }
+
+        // 添加新标记
+        var point = new BMap.Point(lng, lat)
+        baiduMarker = new BMap.Marker(point, {
+          icon: new BMap.Icon(
+            'data:image/svg+xml;base64,' +
+              btoa(
+                unescape(
+                  encodeURIComponent(
+                    '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="42" viewBox="0 0 32 42"><path fill="#00f2fe" d="M16,0 C7.163,0 0,7.163 0,16 C0,24 16,42 16,42 C16,42 32,24 32,16 C32,7.163 24.837,0 16,0 Z"/><circle fill="white" cx="16" cy="16" r="7"/></svg>'
+                  )
+                )
+              ),
+            new BMap.Size(32, 42),
+            {
+              anchor: new BMap.Size(16, 42)
+            }
+          )
+        })
+        baiduMap.addOverlay(baiduMarker)
+
+        // 移动地图中心
+        baiduMap.setCenter(point)
+
+        // 显示坐标信息
+        const coordElem = document.getElementById('baidu-coord')
+        const infoElem = document.getElementById('baidu-info')
+        if (coordElem && infoElem) {
+          coordElem.textContent = formatCoord(lng, lat)
+          infoElem.style.display = 'block'
+        }
+      }
+
+      // 格式化坐标显示
+      function formatCoord(lng, lat) {
+        return `${lng.toFixed(6)}, ${lat.toFixed(6)}`
+      }
+
+      // WGS-84 转换
+      function convertFromWgs84() {
+        const lng = parseFloat(document.getElementById('wgs84-lng').value)
+        const lat = parseFloat(document.getElementById('wgs84-lat').value)
+
+        if (isNaN(lng) || isNaN(lat)) {
+          showToast('请输入有效的经纬度！', 'error')
+          return
+        }
+
+        // 转换
+        const gcj02 = MapUtils.wgs84ToGcj02(lng, lat)
+        const bd09 = MapUtils.wgs84ToBd09(lng, lat)
+
+        // 填充到对应的输入框
+        document.getElementById('gcj02-lng').value = gcj02.lng.toFixed(6)
+        document.getElementById('gcj02-lat').value = gcj02.lat.toFixed(6)
+        document.getElementById('bd09-lng').value = bd09.lng.toFixed(6)
+        document.getElementById('bd09-lat').value = bd09.lat.toFixed(6)
+
+        // 在地图上标记
+        addLeafletMarker(lng, lat) // WGS-84 显示在 Leaflet
+        addAmapMarker(gcj02.lng, gcj02.lat) // GCJ-02 显示在高德
+        addBaiduMarker(bd09.lng, bd09.lat) // BD-09 显示在百度
+
+        showToast('转换成功！')
+      }
+
+      // GCJ-02 转换
+      function convertFromGcj02() {
+        const lng = parseFloat(document.getElementById('gcj02-lng').value)
+        const lat = parseFloat(document.getElementById('gcj02-lat').value)
+
+        if (isNaN(lng) || isNaN(lat)) {
+          showToast('请输入有效的经纬度！', 'error')
+          return
+        }
+
+        // 转换
+        const wgs84 = MapUtils.gcj02ToWgs84(lng, lat)
+        const bd09 = MapUtils.gcj02ToBd09(lng, lat)
+
+        // 填充到对应的输入框
+        document.getElementById('wgs84-lng').value = wgs84.lng.toFixed(6)
+        document.getElementById('wgs84-lat').value = wgs84.lat.toFixed(6)
+        document.getElementById('bd09-lng').value = bd09.lng.toFixed(6)
+        document.getElementById('bd09-lat').value = bd09.lat.toFixed(6)
+
+        // 在地图上标记
+        addLeafletMarker(wgs84.lng, wgs84.lat) // WGS-84 显示在 Leaflet
+        addAmapMarker(lng, lat) // GCJ-02 显示在高德
+        addBaiduMarker(bd09.lng, bd09.lat) // BD-09 显示在百度
+
+        showToast('转换成功！')
+      }
+
+      // BD-09 转换
+      function convertFromBd09() {
+        const lng = parseFloat(document.getElementById('bd09-lng').value)
+        const lat = parseFloat(document.getElementById('bd09-lat').value)
+
+        if (isNaN(lng) || isNaN(lat)) {
+          showToast('请输入有效的经纬度！', 'error')
+          return
+        }
+
+        // 转换
+        const wgs84 = MapUtils.bd09ToWgs84(lng, lat)
+        const gcj02 = MapUtils.bd09ToGcj02(lng, lat)
+
+        // 填充到对应的输入框
+        document.getElementById('wgs84-lng').value = wgs84.lng.toFixed(6)
+        document.getElementById('wgs84-lat').value = wgs84.lat.toFixed(6)
+        document.getElementById('gcj02-lng').value = gcj02.lng.toFixed(6)
+        document.getElementById('gcj02-lat').value = gcj02.lat.toFixed(6)
+
+        // 在地图上标记
+        addLeafletMarker(wgs84.lng, wgs84.lat) // WGS-84 显示在 Leaflet
+        addAmapMarker(gcj02.lng, gcj02.lat) // GCJ-02 显示在高德
+        addBaiduMarker(lng, lat) // BD-09 显示在百度
+
+        showToast('转换成功！')
+      }
+
+      // 填充示例数据
+      function fillSample(lng, lat, type) {
+        document.getElementById(`${type}-lng`).value = lng
+        document.getElementById(`${type}-lat`).value = lat
+        showToast('已填入示例坐标！')
+
+        // 自动转换
+        if (type === 'wgs84') convertFromWgs84()
+        else if (type === 'gcj02') convertFromGcj02()
+        else if (type === 'bd09') convertFromBd09()
+      }
+
+      // 复制坐标
+      function copyCoordinate(lngId, latId) {
+        const lng = document.getElementById(lngId).value
+        const lat = document.getElementById(latId).value
+
+        if (!lng || !lat) {
+          showToast('请先输入或转换坐标！', 'error')
+          return
+        }
+
+        const text = `${lng}, ${lat}`
+
+        navigator.clipboard
+          .writeText(text)
+          .then(() => {
+            showToast('已复制到剪贴板：' + text)
+          })
+          .catch(() => {
+            showToast('复制失败，请手动复制', 'error')
+          })
+      }
+
+      // 显示提示
+      function showToast(message, type = 'success') {
+        const toast = document.getElementById('toast')
+        toast.textContent = message
+        toast.style.background = type === 'error' ? '#f5222d' : '#52c41a'
+        toast.classList.add('show')
+
+        setTimeout(() => {
+          toast.classList.remove('show')
+        }, 2000)
+      }
+
+      // 支持回车键转换
+      document.querySelectorAll('input').forEach((input) => {
+        input.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            const cardType = input.id.split('-')[0]
+            if (cardType === 'wgs84') convertFromWgs84()
+            else if (cardType === 'gcj02') convertFromGcj02()
+            else if (cardType === 'bd09') convertFromBd09()
+          }
+        })
+      })
+    </script>
+  </body>
+</html>
