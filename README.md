@@ -2,11 +2,11 @@
 
 JS 地图坐标转换工具库，支持 WGS-84、GCJ-02、BD-09 三种坐标系之间的相互转换。
 
-## 🌐 在线演示
+## 在线演示
 
 访问 [在线演示页面](https://orange4moon.github.io/om-map-utils/) 查看实时转换效果。
 
-## 📦 安装
+## 安装
 
 ```bash
 npm install om-map-utils
@@ -28,7 +28,7 @@ yarn add om-map-utils
 <script src="https://cdn.jsdelivr.net/npm/om-map-utils/dist/om-map-utils.min.js"></script>
 ```
 
-## 🚀 快速开始
+## 快速开始
 
 ### ES Module
 
@@ -71,7 +71,7 @@ console.log(gcj)
 </script>
 ```
 
-## 📖 API 文档
+## API 文档
 
 ### 坐标系说明
 
@@ -187,25 +187,4 @@ const gcj02Points = batchConvert(wgs84Points, wgs84ToGcj02)
 //   { lng: 116.40484925949647, lat: 39.91740528150164 }
 // ]
 ```
-
-## 📊 转换关系图
-
-```
-       wgs84ToGcj02         gcj02ToBd09
-WGS-84 ============> GCJ-02 ============> BD-09
-  ▲                    ▲                    |
-  |                    |                    |
-  |   gcj02ToWgs84     |    bd09ToGcj02    |
-  +===================<+===================<+
-              
-           wgs84ToBd09 (直接转换)
-  WGS-84 ==============================> BD-09
-    ▲                                      |
-    |         bd09ToWgs84 (直接转换)      |
-    +======================================+
-```
-
-## 📄 License
-
-MIT License
 
