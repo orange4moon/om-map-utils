@@ -3,8 +3,9 @@ node_modules/
 
 # Build output
 dist/
-docs/*.js
-docs/*.js.map
+
+# Temporarily generated files in docs (keep om-map-utils.js and .min.js)
+docs/*.map
 
 # Logs
 logs
